@@ -518,7 +518,7 @@ function updateResults() {
   const sessMins   = S.sessMins;
   const calDays    = sessMins>0 ? totalMins/sessMins : Infinity;
   const tier       = getSpeedTier(S.cpm);
-  const pct        = Math.min(100, S.chars/7000000*100);
+  const pct        = Math.min(100, S.chars/1000000*100);
   const tierC      = tier ? tier.color : 'var(--accent)';
   const tierBg     = tier ? tier.color+'22' : 'rgba(168,85,247,.15)';
 
@@ -547,7 +547,7 @@ function updateResults() {
 
     <div style="margin-bottom:13px">
       <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:4px">
-        <span>VN Length (relative to longest ~7M chars)</span>
+        <span>VN Length (relative to a long VN ~1M chars)</span>
         <span>${pct.toFixed(0)}%</span>
       </div>
       <div class="timeline-bar"><div class="timeline-fill" id="tf" style="width:0%"></div></div>
