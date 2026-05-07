@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VN Reading Speed Calculator ✦ 読書速度計算機</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #07051a;
+  --card: rgba(12, 7, 32, 0.88);
+  --accent: #e879f9;
+  --accent2: #a855f7;
+  --accent3: #818cf8;
+  --blue: #60a5fa;
+  --text: #f3e8ff;
+  --subtext: #c4b5fd;
+  --muted: #6b5fa0;
+  --border: rgba(168,85,247,0.22);
+  --border-active: rgba(232,121,249,0.55);
+  --glow: rgba(168,85,247,0.28);
+  --glow2: rgba(232,121,249,0.45);
+  --success: #34d399;
+  --warning: #fbbf24;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* ── Background ── */
+.stars{position:fixed;inset:0;pointer-events:none;z-index:0}
+.star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d,3s) ease-in-out infinite var(--dl,0s)}
+@keyframes twinkle{0%,100%{opacity:.15;transform:scale(1)}50%{opacity:.9;transform:scale(1.6)}}
+.nebula{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0}
+.n1{width:700px;height:500px;background:radial-gradient(circle,rgba(168,85,247,.13) 0%,transparent 70%);top:-120px;left:-120px}
+.n2{width:600px;height:600px;background:radial-gradient(circle,rgba(232,121,249,.09) 0%,transparent 70%);bottom:50px;right:-150px}
+.n3{width:400px;height:300px;background:radial-gradient(circle,rgba(96,165,250,.07) 0%,transparent 70%);top:40%;left:40%}
+.petals{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.petal{position:absolute;top:0;left:0;opacity:0;will-change:transform,opacity;user-select:none}
+
+/* ── Layout ── */
+.wrap{position:relative;z-index:1;max-width:920px;margin:0 auto;padding:20px 16px}
+
+/* ── Header ── */
+header{text-align:center;padding:44px 0 28px}
+.hdr-eyebrow{font-size:11px;letter-spacing:.55em;color:var(--accent);margin-bottom:10px;opacity:.8}
+.hdr-title{font-family:'Cinzel',serif;font-size:clamp(22px,5vw,40px);font-weight:600;background:linear-gradient(135deg,#f0abfc 0%,#a78bfa 50%,#e879f9 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.2;margin-bottom:8px}
+.hdr-sub{color:var(--subtext);font-size:12px;letter-spacing:.18em}
+.hdr-line{margin:22px auto 0;width:220px;height:1px;background:linear-gradient(to right,transparent,var(--accent2),transparent)}
+
+/* ── Cards ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 24px;margin-bottom:14px;backdrop-filter:blur(12px);transition:border-color .3s,box-shadow .3s;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(to right,transparent,rgba(168,85,247,.5),transparent)}
+.card:hover{border-color:rgba(168,85,247,.4);box-shadow:0 0 24px var(--glow)}
+.card-title{font-size:10px;letter-spacing:.38em;text-transform:uppercase;color:var(--accent);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.card-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── Speed inputs ── */
+.speed-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(min-width:560px){.speed-grid{grid-template-columns:repeat(4,1fr)}}
+.sp-unit{display:flex;flex-direction:column;gap:5px}
+.sp-unit label{font-size:10px;color:var(--subtext);letter-spacing:.08em}
+.sp-unit input{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-family:inherit;font-size:15px;width:100%;transition:border-color .2s,box-shadow .2s,background .2s}
+.sp-unit input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 9px var(--glow2);background:rgba(232,121,249,.07)}
+
+/* ── Presets ── */
+.presets{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;align-items:center}
+.presets-label{font-size:10px;color:var(--muted)}
+.preset{background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.28);border-radius:20px;padding:5px 13px;color:var(--subtext);font-family:inherit;font-size:11px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.preset:hover{background:rgba(232,121,249,.18);border-color:var(--accent);color:var(--text)}
+.preset.on{background:rgba(232,121,249,.22);border-color:var(--accent);color:var(--accent)}
+
+/* ── VN search ── */
+.chars-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.chars-row label{font-size:11px;color:var(--subtext);white-space:nowrap}
+.chars-row input{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:inherit;font-size:15px;flex:1;min-width:120px;transition:border-color .2s,box-shadow .2s}
+.chars-row input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 9px var(--glow2)}
+.chars-row span{font-size:11px;color:var(--muted)}
+
+/* ── Session ── */
+.sess-row{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+.sess-group{display:flex;align-items:center;gap:7px}
+.sess-group label{font-size:11px;color:var(--subtext)}
+.sess-input{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-family:inherit;font-size:15px;width:68px;text-align:center;transition:border-color .2s}
+.sess-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 6px var(--glow2)}
+
+/* ── Results ── */
+.results-empty{text-align:center;color:var(--muted);padding:22px;font-size:13px;line-height:1.8}
+.res-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+@media(min-width:520px){.res-grid{grid-template-columns:repeat(4,1fr)}}
+.res-stat{background:rgba(168,85,247,.07);border:1px solid var(--border);border-radius:10px;padding:13px 10px;text-align:center}
+.res-val{font-size:21px;font-weight:700;color:var(--accent);line-height:1.1}
+.res-lbl{font-size:9px;color:var(--muted);margin-top:4px;letter-spacing:.1em;text-transform:uppercase}
+.timeline-bar{background:rgba(255,255,255,.05);border-radius:6px;height:7px;overflow:hidden;margin:10px 0}
+.timeline-fill{height:100%;background:linear-gradient(to right,var(--accent2),var(--accent));border-radius:6px;transition:width .9s cubic-bezier(.4,0,.2,1);width:0%}
+.tier-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.05em}
+.breakdown-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:rgba(255,255,255,.03);border-radius:8px;padding:11px;margin-bottom:12px}
+.bkd-item{text-align:center}
+.bkd-val{font-size:15px;font-weight:600;color:var(--text)}
+.bkd-lbl{font-size:9px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.08em}
+.milestones{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;font-size:11px}
+.ms-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.ms-row:last-child{border-bottom:none}
+.ms-pct{color:var(--accent);font-weight:600;width:36px}
+.ms-date{color:var(--subtext)}
+.ms-day{color:var(--muted)}
+.dialogue{background:rgba(4,2,14,.92);border:1px solid var(--border-active);border-radius:10px;padding:15px 18px;font-size:12.5px;line-height:1.75;color:var(--subtext)}
+.dialogue .speaker{font-size:10px;color:var(--accent);font-weight:700;letter-spacing:.12em;margin-bottom:7px}
+
+/* ── Import ── */
+.btn{background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:8px;padding:9px 19px;color:#fff;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .2s,transform .1s;letter-spacing:.04em}
+.btn:hover{opacity:.88}
+.btn:active{transform:scale(.97)}
+.btn-ghost{background:transparent;border:1px solid var(--border-active);color:var(--accent)}
+.btn-ghost:hover{background:rgba(232,121,249,.1)}
+
+/* ── VN Images ── */
+.vn-img{position:fixed;pointer-events:none;user-select:none;z-index:0;object-fit:cover;opacity:0;border-radius:3px;mask-image:radial-gradient(ellipse at center,black 22%,transparent 70%);-webkit-mask-image:radial-gradient(ellipse at center,black 22%,transparent 70%)}
+
+/* ── Misc ── */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:rgba(255,255,255,.02)}
+::-webkit-scrollbar-thumb{background:var(--accent2);border-radius:3px}
+footer{text-align:center;padding:28px 0;color:var(--muted);font-size:10px;letter-spacing:.1em;line-height:2}
+footer a{color:var(--accent2);text-decoration:none}
+@media(max-width:460px){.card{padding:15px 14px}.wrap{padding:12px}}
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+<div class="nebula n1"></div><div class="nebula n2"></div><div class="nebula n3"></div>
+<div class="petals" id="petals"></div>
+
+<div class="wrap">
+  <header>
+    <div class="hdr-eyebrow">✦ 視覚的ノベル読書速度 ✦</div>
+    <h1 class="hdr-title">VN Reading Speed Calculator</h1>
+    <p class="hdr-sub">読書速度計算機 ～ How long will your journey take?</p>
+    <div class="hdr-line"></div>
+  </header>
+
+  <main>
+
+    <!-- Speed -->
+    <div class="card">
+      <div class="card-title">◆ Reading Speed &nbsp;読書速度</div>
+      <div class="speed-grid">
+        <div class="sp-unit">
+          <label>Characters / Second</label>
+          <input type="number" id="sp-sec" placeholder="—" min="0" step="0.001">
+        </div>
+        <div class="sp-unit">
+          <label>Characters / Minute</label>
+          <input type="number" id="sp-min" placeholder="—" min="0" step="0.1">
+        </div>
+        <div class="sp-unit">
+          <label>Characters / Hour</label>
+          <input type="number" id="sp-hr" placeholder="—" min="0" step="1">
+        </div>
+        <div class="sp-unit">
+          <label>Characters / Day (24h)</label>
+          <input type="number" id="sp-day" placeholder="—" min="0" step="100">
+        </div>
+      </div>
+      <div class="presets">
+        <span class="presets-label">Speed Presets:</span>
+        <button class="preset" data-cpm="80">🌱 Beginner &nbsp;80/min</button>
+        <button class="preset" data-cpm="150">📖 Learner &nbsp;150/min</button>
+        <button class="preset" data-cpm="250">⚡ Advanced &nbsp;250/min</button>
+        <button class="preset" data-cpm="400">✨ Near-Native &nbsp;400/min</button>
+        <button class="preset" data-cpm="600">👑 Native &nbsp;600/min</button>
+      </div>
+    </div>
+
+    <!-- Character count -->
+    <div class="card">
+      <div class="card-title">◆ Character Count &nbsp;文字数</div>
+      <div class="chars-row">
+        <label>Total characters:</label>
+        <input type="number" id="custom-chars" placeholder="e.g. 1400000" min="0" step="1000">
+        <span>characters</span>
+      </div>
+    </div>
+
+    <!-- Session -->
+    <div class="card">
+      <div class="card-title">◆ Daily Reading Session &nbsp;一日の読書時間</div>
+      <div class="sess-row">
+        <div class="sess-group">
+          <input type="number" class="sess-input" id="sess-h" value="1" min="0" max="24">
+          <label>hours</label>
+        </div>
+        <div class="sess-group">
+          <input type="number" class="sess-input" id="sess-m" value="0" min="0" max="59">
+          <label>minutes</label>
+        </div>
+        <span style="font-size:11px;color:var(--muted)">per day</span>
+      </div>
+      <div class="presets" style="margin-top:12px">
+        <span class="presets-label">Quick:</span>
+        <button class="preset" data-sess="30">30 min/day</button>
+        <button class="preset" data-sess="60">1 hr/day</button>
+        <button class="preset" data-sess="120">2 hr/day</button>
+        <button class="preset" data-sess="180">3 hr/day</button>
+        <button class="preset" data-sess="240">4 hr/day</button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="card" id="results-card">
+      <div class="card-title">◆ Results &nbsp;結果</div>
+      <div id="results-body">
+        <div class="results-empty">
+          ✦ &nbsp;Enter your reading speed and character count above to see results &nbsp;✦<br>
+          <span style="font-size:11px">「どれほど読めばいいか、それが問題だ」</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    ✦ &nbsp;「読書は旅に似ている — どこへでも行ける」&nbsp; ✦
+  </footer>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────────────────────
+let S = { cpm: 0, chars: 0, sessMins: 60 };
+
+// ─────────────────────────────────────────────────────────────
+//  BACKGROUND FX
+// ─────────────────────────────────────────────────────────────
+function initPetals() {
+  const container = document.getElementById('petals');
+  const emojis = ['🌸','🌸','🌸','🌸','✿','❀','✾'];
+  const COUNT = 20;
+
+  // Wind: shared horizontal force (px/s). Flips direction periodically.
+  let windX     = (Math.random() > 0.5 ? 1 : -1) * (30 + Math.random() * 40);
+  let targetWX  = windX;
+  let windTimer = 8 + Math.random() * 9; // seconds until next shift
+
+  const cW = () => container.offsetWidth  || window.innerWidth;
+  const cH = () => container.offsetHeight || window.innerHeight;
+
+  // Spawn petals spread across the screen so there's no initial empty period
+  const petals = Array.from({length: COUNT}, () => {
+    const el = document.createElement('div');
+    el.className = 'petal';
+    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    el.style.fontSize = (10 + Math.random() * 7) + 'px';
+    container.appendChild(el);
+    return {
+      el,
+      x:          Math.random() * cW(),
+      y:          Math.random() * cH(),   // pre-seeded across full height
+      vy:         40 + Math.random()**1.5 * 90,  // 40–130 px/s, skewed slow
+      rot:        Math.random() * 360,
+      rotSpd:     (Math.random() - 0.5) * 80,    // deg/s
+      wblPhase:   Math.random() * Math.PI * 2,
+      wblFreq:    0.35 + Math.random() * 0.55,   // Hz — wobble cycle speed
+      wblAmp:     18  + Math.random() * 38,      // px — wobble side-to-side width
+      windMult:   0.55 + Math.random() * 0.9,    // petal-level wind sensitivity
+      maxOp:      0.30 + Math.random() * 0.38,
+    };
+  });
+
+  let lastTs = null;
+
+  function tick(ts) {
+    if (!lastTs) { lastTs = ts; requestAnimationFrame(tick); return; }
+    // dt in seconds, capped so a backgrounded tab doesn't teleport petals
+    const dt = Math.min((ts - lastTs) / 1000, 0.08);
+    lastTs = ts;
+
+    const w = cW(), h = cH();
+
+    // Wind timer countdown
+    windTimer -= dt;
+    if (windTimer <= 0) {
+      targetWX  = -Math.sign(targetWX) * (25 + Math.random() * 60);
+      windTimer = 7 + Math.random() * 11;
+    }
+    // Ease wind toward target (feels like gusts building/dying)
+    windX += (targetWX - windX) * Math.min(dt * 0.9, 1);
+
+    for (const p of petals) {
+      // Independent sinusoidal wobble per petal
+      p.wblPhase += p.wblFreq * Math.PI * 2 * dt;
+      const wobble = Math.sin(p.wblPhase) * p.wblAmp;
+
+      p.x   += (windX * p.windMult + wobble) * dt;
+      p.y   += p.vy * dt;
+      p.rot += p.rotSpd * dt;
+
+      // Opacity: fade in over top 8%, fade out over bottom 12%
+      const prog = p.y / h;
+      let op = p.maxOp;
+      if      (prog < 0.08) op *= prog / 0.08;
+      else if (prog > 0.88) op *= (1 - prog) / 0.12;
+
+      // Recycle off-screen petals
+      if (p.y > h + 30 || p.x < -100 || p.x > w + 100) {
+        // 35% chance to re-enter from the upwind side so the stream feels continuous
+        if (Math.random() < 0.35 && Math.abs(windX) > 15) {
+          p.x = windX > 0 ? -20 : w + 20;
+          p.y = Math.random() * h * 0.65;
+        } else {
+          p.x = Math.random() * w;
+          p.y = -15;
+        }
+        p.wblPhase = Math.random() * Math.PI * 2;
+        op = 0;
+      }
+
+      p.el.style.transform = `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px) rotate(${p.rot.toFixed(1)}deg)`;
+      p.el.style.opacity   = op.toFixed(3);
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  VN IMAGE TWINKLING
+// ─────────────────────────────────────────────────────────────
+(function initVNImages() {
+  const FILES = [
+    'atsui kara kiwotsukenai to ne.png','EV017A.png','EV029B.png','ev101b.png',
+    'ev102d.png','ev104c.png','ev108.png','EV108A.png','ev109a.png','ev111.png',
+    'EV402A.png','EV403B.png','EV406A.png','EV407A.png','ev407d.png','EV408C.png',
+    'EV409A.png','ev409f.png','EV410C.png','EV411A.png','EV501A.png','EV611A.png',
+    'EV611F.png','i love her.png','mibu gah dan.png','mibu kawaaa.png',
+    'mibu to kasumi pretty.png','PIC#01451.png','PIC#01459.png','PIC#01486.png',
+    'PIC#01507.png','PIC#01518.png','PIC#01531.png','PIC#01537.png','PIC#01546.png',
+    'PIC#01600.png','PIC#01608.png','PIC#01647.png','PIC#01676.png',
+    'Screenshot 2024-02-28 223952.png','Screenshot 2024-02-29 193122.png',
+    'Screenshot 2024-03-04 223421.png','Screenshot 2024-03-04 231235.png',
+    'Screenshot 2024-03-04 234227.png','Screenshot 2024-03-11 195524.png',
+    'Screenshot 2024-03-13 211445.png','Screenshot 2024-03-16 222422.png',
+    'Screenshot 2024-03-16 222817.png','Screenshot 2024-03-17 160011.png',
+    'Screenshot 2024-03-18 212253.png','Screenshot 2024-03-18 214229.png',
+    'Screenshot 2024-03-18 225636.png','Screenshot 2024-03-21 194420.png',
+    'Screenshot 2024-04-05 214026.png','Screenshot 2024-04-11 214219.png',
+    'Screenshot 2024-04-20 211720.png','Screenshot 2024-04-21 160008.png',
+    'Screenshot 2024-04-21 160342.png','Screenshot 2024-04-21 201009.png',
+    'Screenshot 2024-04-27 164828.png','Screenshot 2024-04-27 173603.png',
+    'Screenshot 2024-04-27 174608.png','Screenshot 2024-04-27 181711.png',
+    'Screenshot 2024-04-28 220421.png','Screenshot 2024-04-29 183146.png',
+    'Screenshot 2024-04-30 222829.png','Screenshot 2024-05-02 180510.png',
+    'Screenshot 2024-05-02 205849.png','Screenshot 2024-05-03 003111.png',
+    'Screenshot 2024-05-04 214500.png','Screenshot 2024-05-05 165825.png',
+    'Screenshot 2024-05-10 202817.png','Screenshot 2024-05-15 220240.png',
+    'Screenshot 2024-06-18 210753.png','Screenshot 2024-06-20 175217.png',
+    'Screenshot 2024-06-20 182356.png','Screenshot 2024-08-10 094422.png',
+    'Screenshot 2024-08-20 193834.png','Screenshot 2024-09-02 201545.png',
+    'Screenshot 2024-09-14 000626.png','Screenshot 2024-09-14 000802.png',
+    'Screenshot 2024-09-14 000842.png','Screenshot 2024-11-26 20-28-41.png',
+    'Screenshot 2024-11-26 20-28-48.png','Screenshot 2024-11-26 20-28-59.png',
+    'Screenshot 2024-11-26 20-29-01.png','Screenshot 2024-11-26 20-32-49.png',
+    'Screenshot 2024-11-26 20-32-52.png','Screenshot 2024-11-26 20-33-11.png',
+    'Screenshot 2024-11-26 20-33-21.png','Screenshot 2025-05-21 094423.png',
+    'Screenshot 2025-06-06 113801.png','Screenshot 2025-06-08 073513.png',
+    'Screenshot 2025-06-08 073537.png','Screenshot 2025-06-08 075715.png',
+    'Screenshot 2025-06-08 082407.png','Screenshot 2025-06-08 082609.png',
+    'Screenshot 2025-06-08 121849.png','Screenshot 2025-06-08 121940.png',
+    'Screenshot 2025-06-08 125735.png','Screenshot 2025-06-08 221649.png',
+    'Screenshot 2025-06-08 221912.png','Screenshot 2025-06-08 223529.png',
+    'Screenshot 2025-06-08 223742.png','Screenshot 2025-06-08 223759.png',
+    'Screenshot 2025-06-08 223821.png','Screenshot 2025-06-08 223901.png',
+    'Screenshot 2025-06-08 223923.png','Screenshot 2025-06-08 223933.png',
+    'Screenshot 2025-06-08 223943.png','Screenshot 2025-06-08 223954.png',
+    "she's adorablllllle.png",'shes so pretty.png','smug gakuenchou.png',
+    'that loli needs correction.png',
+  ];
+
+  const MAX = 10;
+  let active = 0;
+
+  function spawn() {
+    if (active >= MAX) return;
+    active++;
+
+    const file = FILES[Math.floor(Math.random() * FILES.length)];
+    const el = document.createElement('img');
+    el.className = 'vn-img';
+    el.src = 'VN_images/' + encodeURIComponent(file);
+
+    const size  = 130 + Math.random() * 190;            // 130–320 px wide
+    const fadeMs = 450 + Math.random() * 250;            // 450–700 ms each side
+    const holdMs = 350 + Math.random() * 550;            // 350–900 ms hold
+    const peakOp = (0.32 + Math.random() * 0.28).toFixed(3); // 0.32–0.60
+
+    el.style.cssText =
+      'width:' + size.toFixed(0) + 'px;' +
+      'left:'  + (Math.random() * Math.max(10, window.innerWidth  - size)).toFixed(0) + 'px;' +
+      'top:'   + (Math.random() * Math.max(10, window.innerHeight - size * 0.6)).toFixed(0) + 'px;' +
+      'transition:opacity ' + fadeMs.toFixed(0) + 'ms ease;';
+
+    document.body.appendChild(el);
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      el.style.opacity = peakOp;
+      setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => { el.remove(); active--; }, fadeMs + 60);
+      }, fadeMs + holdMs);
+    }));
+  }
+
+  function schedule() {
+    spawn();
+    setTimeout(schedule, 250 + Math.random() * 400);
+  }
+
+  schedule();
+})();
+
+function initBg() {
+  const sc = document.getElementById('stars');
+  for (let i = 0; i < 130; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const sz = Math.random()*2+1;
+    Object.assign(s.style, {
+      left: Math.random()*100+'%', top: Math.random()*100+'%',
+      width: sz+'px', height: sz+'px',
+      '--d': (Math.random()*3+2)+'s', '--dl': (Math.random()*6)+'s'
+    });
+    sc.appendChild(s);
+  }
+  initPetals();
+}
+
+// ─────────────────────────────────────────────────────────────
+//  SPEED SYNC
+// ─────────────────────────────────────────────────────────────
+function fmt(n, d) {
+  if (!n || !isFinite(n)) return '';
+  return d===0 ? String(Math.round(n)) : parseFloat(n.toFixed(d)).toString();
+}
+
+function syncSpeed(cpm, skip) {
+  S.cpm = cpm;
+  const map = {'sp-sec':[cpm/60,3],'sp-min':[cpm,1],'sp-hr':[cpm*60,0],'sp-day':[cpm*1440,0]};
+  for (const [id,[val,d]] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    if (id !== skip && document.activeElement !== el) el.value = fmt(val,d);
+  }
+  updateResults();
+}
+
+function onSpeedInput(id) {
+  const v = parseFloat(document.getElementById(id).value)||0;
+  const cpm = id==='sp-sec' ? v*60 : id==='sp-min' ? v : id==='sp-hr' ? v/60 : v/1440;
+  syncSpeed(cpm, id);
+}
+
+function fmtChars(n) {
+  if (n>=1e6) return (n/1e6).toFixed(2)+'M';
+  if (n>=1000) return Math.round(n/1000)+'K';
+  return String(n);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  RESULTS
+// ─────────────────────────────────────────────────────────────
+function getSpeedTier(cpm) {
+  if (cpm<=0)   return null;
+  if (cpm<80)   return {label:'Just Starting', jp:'初心者',  color:'#94a3b8', e:'🌱'};
+  if (cpm<150)  return {label:'Beginner',       jp:'初級',   color:'#60a5fa', e:'📖'};
+  if (cpm<250)  return {label:'Intermediate',   jp:'中級',   color:'#34d399', e:'⚡'};
+  if (cpm<400)  return {label:'Advanced',       jp:'上級',   color:'#fbbf24', e:'🌟'};
+  if (cpm<600)  return {label:'Near-Native',    jp:'準ネイティブ', color:'#e879f9', e:'✨'};
+  return               {label:'Native Speed',   jp:'神速',   color:'#f87171', e:'👑'};
+}
+
+function fmtTime(mins) {
+  if (mins<60) return Math.round(mins)+'m';
+  const h=Math.floor(mins/60), m=Math.round(mins%60);
+  if (h<24) return m>0 ? h+'h '+m+'m' : h+'h';
+  const d=Math.floor(h/24), rh=h%24;
+  return rh>0 ? d+'d '+rh+'h' : d+'d';
+}
+
+function addDays(base, days) {
+  const d = new Date(base);
+  d.setDate(d.getDate()+Math.ceil(days));
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+
+const TODAY = new Date('2026-05-07');
+
+function getDialogue(hrs) {
+  if (hrs<5)   return `A breezy read — you can finish this one in a single session or a lazy weekend afternoon.`;
+  if (hrs<15)  return `A satisfying medium-length adventure. Just long enough to get properly invested in the characters.`;
+  if (hrs<30)  return `Clear your evenings — this one will take some dedication. The kind of read that lingers with you long after the credits.`;
+  if (hrs<60)  return `Get comfortable. This is a long journey that will feel like a second life. Stock up on snacks.`;
+  return `An epic undertaking. This VN will become a part of your life. Tell your friends you're going on a journey.`;
+}
+
+function updateResults() {
+  const body = document.getElementById('results-body');
+  if (!S.cpm||S.cpm<=0||!S.chars||S.chars<=0) {
+    body.innerHTML='<div class="results-empty">✦ &nbsp;Enter your reading speed and select a visual novel above to see results &nbsp;✦<br><span style="font-size:11px">「どれほど読めばいいか、それが問題だ」</span></div>';
+    return;
+  }
+
+  const totalMins  = S.chars / S.cpm;
+  const totalHrs   = totalMins / 60;
+  const sessMins   = S.sessMins;
+  const calDays    = sessMins>0 ? totalMins/sessMins : Infinity;
+  const tier       = getSpeedTier(S.cpm);
+  const pct        = Math.min(100, S.chars/7000000*100);
+  const tierC      = tier ? tier.color : 'var(--accent)';
+  const tierBg     = tier ? tier.color+'22' : 'rgba(168,85,247,.15)';
+
+  // milestones
+  let msHTML = '';
+  if (isFinite(calDays)) {
+    const msPcts = [25,50,75,100];
+    msHTML = `<div class="milestones"><div style="font-size:9px;color:var(--accent);letter-spacing:.2em;margin-bottom:6px">MILESTONES</div>` +
+      msPcts.map(p=>{
+        const d = calDays*(p/100);
+        return `<div class="ms-row">
+          <span class="ms-pct">${p}%</span>
+          <span class="ms-date">${addDays(TODAY, d)}</span>
+          <span class="ms-day">${Math.ceil(d)} day${Math.ceil(d)!==1?'s':''} in</span>
+        </div>`;
+      }).join('') + '</div>';
+  }
+
+  body.innerHTML = `
+    <div class="res-grid">
+      <div class="res-stat"><div class="res-val">${fmtTime(totalMins)}</div><div class="res-lbl">Total Time</div></div>
+      <div class="res-stat"><div class="res-val">${totalHrs.toFixed(1)}h</div><div class="res-lbl">Hours</div></div>
+      <div class="res-stat"><div class="res-val">${isFinite(calDays)?Math.ceil(calDays)+'d':'∞'}</div><div class="res-lbl">Calendar Days</div></div>
+      <div class="res-stat"><div class="res-val">${fmtChars(S.chars)}</div><div class="res-lbl">Characters</div></div>
+    </div>
+
+    <div style="margin-bottom:13px">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:4px">
+        <span>VN Length (relative to longest ~7M chars)</span>
+        <span>${pct.toFixed(0)}%</span>
+      </div>
+      <div class="timeline-bar"><div class="timeline-fill" id="tf" style="width:0%"></div></div>
+    </div>
+
+    ${tier?`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:13px">
+      <span style="font-size:10px;color:var(--muted)">Speed Tier:</span>
+      <div class="tier-badge" style="background:${tierBg};border:1px solid ${tierC}44;color:${tierC}">
+        ${tier.e} ${tier.label} <span style="opacity:.65;margin-left:4px">${tier.jp}</span>
+      </div>
+      <span style="font-size:12px;color:var(--subtext)">${Math.round(S.cpm)} chars/min</span>
+    </div>`:''}
+
+    ${sessMins>0&&isFinite(calDays)?`<div class="breakdown-grid">
+      <div class="bkd-item">
+        <div class="bkd-val">${sessMins>=60?Math.floor(sessMins/60)+'h':''} ${sessMins%60?sessMins%60+'m':''}</div>
+        <div class="bkd-lbl">per session</div>
+      </div>
+      <div class="bkd-item">
+        <div class="bkd-val">${Math.ceil(calDays)}</div>
+        <div class="bkd-lbl">days</div>
+      </div>
+      <div class="bkd-item">
+        <div class="bkd-val">${calDays>=7?(calDays/7).toFixed(1)+' wk':'< 1 wk'}</div>
+        <div class="bkd-lbl">weeks</div>
+      </div>
+    </div>`:''}
+
+    ${msHTML}
+
+    <div class="dialogue">
+      <div class="speaker">★ 計算機のお告げ ～ The Calculator's Verdict</div>
+      ${getDialogue(totalHrs)}
+    </div>
+  `;
+
+  setTimeout(()=>{ const tf=document.getElementById('tf'); if(tf) tf.style.width=pct+'%'; }, 60);
+}
+
+
+// ─────────────────────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', ()=>{
+  initBg();
+
+  // speed inputs
+  ['sp-sec','sp-min','sp-hr','sp-day'].forEach(id=>{
+    document.getElementById(id).addEventListener('input',()=>onSpeedInput(id));
+  });
+
+  // character count
+  document.getElementById('custom-chars').addEventListener('input', e=>{
+    S.chars = parseInt(e.target.value)||0;
+    updateResults();
+  });
+
+  // session
+  function readSess(){ S.sessMins=(parseInt(document.getElementById('sess-h').value)||0)*60+(parseInt(document.getElementById('sess-m').value)||0); updateResults(); }
+  document.getElementById('sess-h').addEventListener('input',readSess);
+  document.getElementById('sess-m').addEventListener('input',readSess);
+  readSess();
+
+  // speed presets
+  document.querySelectorAll('.preset[data-cpm]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      syncSpeed(parseFloat(btn.dataset.cpm));
+      document.querySelectorAll('.preset[data-cpm]').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on');
+    });
+  });
+
+  // session presets
+  document.querySelectorAll('.preset[data-sess]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const m=parseInt(btn.dataset.sess);
+      document.getElementById('sess-h').value=Math.floor(m/60);
+      document.getElementById('sess-m').value=m%60;
+      S.sessMins=m;
+      document.querySelectorAll('.preset[data-sess]').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on');
+      updateResults();
+    });
+  });
+
+
+});
+</script>
+</body>
+</html>
