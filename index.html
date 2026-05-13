@@ -496,7 +496,9 @@ function addDays(base, days) {
   return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 }
 
-const TODAY = new Date('2026-05-07');
+let TODAY = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+let todayLabel = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'short' })
+  .formatToParts(new Date()).find(p => p.type === 'timeZoneName')?.value || 'ET';
 
 function getDialogue(hrs) {
   if (hrs<5)   return `A breezy read — you can finish this one in a single session or a lazy weekend afternoon.`;
@@ -526,7 +528,8 @@ function updateResults() {
   let msHTML = '';
   if (isFinite(calDays)) {
     const msPcts = [25,50,75,100];
-    msHTML = `<div class="milestones"><div style="font-size:9px;color:var(--accent);letter-spacing:.2em;margin-bottom:6px">MILESTONES</div>` +
+    const todayFmt = TODAY.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    msHTML = `<div class="milestones"><div style="font-size:9px;color:var(--accent);letter-spacing:.2em;margin-bottom:4px">MILESTONES</div><div style="font-size:9px;color:var(--muted);margin-bottom:8px">starting from ${todayFmt} · ${todayLabel}</div>` +
       msPcts.map(p=>{
         const d = calDays*(p/100);
         return `<div class="ms-row">
