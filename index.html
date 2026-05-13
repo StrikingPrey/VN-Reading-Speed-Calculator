@@ -118,6 +118,30 @@ header{text-align:center;padding:44px 0 28px}
 /* ── VN Images ── */
 .vn-img{position:fixed;pointer-events:none;user-select:none;z-index:0;object-fit:cover;opacity:0;border-radius:3px;mask-image:radial-gradient(ellipse at center,black 22%,transparent 70%);-webkit-mask-image:radial-gradient(ellipse at center,black 22%,transparent 70%)}
 
+/* ── VN Library Search ── */
+.vn-search-input-row{position:relative;display:flex;align-items:center}
+#vn-search-input{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:10px 38px 10px 14px;color:var(--text);font-family:inherit;font-size:14px;transition:border-color .2s,box-shadow .2s}
+#vn-search-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 9px var(--glow2);background:rgba(232,121,249,.05)}
+#vn-search-input::placeholder{color:var(--muted)}
+.vn-spinner{position:absolute;right:12px;color:var(--accent);font-size:15px;animation:vnSpin 1.1s linear infinite;line-height:1}
+@keyframes vnSpin{to{transform:rotate(360deg)}}
+.vn-results{background:rgba(5,2,16,.97);border:1px solid var(--border-active);border-radius:10px;margin-top:6px;overflow:hidden;max-height:300px;overflow-y:auto}
+.vn-result-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);transition:background .13s}
+.vn-result-item:last-child{border-bottom:none}
+.vn-result-item:hover,.vn-result-item.vn-active{background:rgba(168,85,247,.15)}
+.vn-res-title{font-size:13px;color:var(--text);line-height:1.35}
+.vn-res-alt{font-size:10px;color:var(--subtext);opacity:.72;margin-top:1px}
+.vn-res-meta{font-size:9px;color:var(--muted);margin-top:3px;letter-spacing:.04em}
+.vn-selected{background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.28);border-radius:10px;padding:14px 16px;margin-top:10px}
+.vn-sel-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px}
+.vn-sel-alt{font-size:11px;color:var(--subtext);margin-bottom:10px;opacity:.8}
+.vn-sel-stats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:11px}
+.vn-sel-stat{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:9px 12px;text-align:center;flex:1;min-width:76px}
+.vn-sel-val{font-size:16px;font-weight:700;color:var(--accent);line-height:1.1}
+.vn-sel-lbl{font-size:9px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.08em}
+.vn-msg{font-size:11px;color:var(--muted);padding:4px 0}
+.vn-hint{font-size:10px;color:var(--muted);margin-top:10px;line-height:1.75}
+
 /* ── Misc ── */
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:rgba(255,255,255,.02)}
@@ -171,6 +195,21 @@ footer a{color:var(--accent2);text-decoration:none}
         <button class="preset" data-cpm="250">⚡ Advanced &nbsp;250/min</button>
         <button class="preset" data-cpm="400">✨ Near-Native &nbsp;400/min</button>
         <button class="preset" data-cpm="600">👑 Native &nbsp;600/min</button>
+      </div>
+    </div>
+
+    <!-- VN Library Search -->
+    <div class="card">
+      <div class="card-title">◆ Visual Novel Lookup &nbsp;作品を探す</div>
+      <div class="vn-search-input-row">
+        <input type="text" id="vn-search-input" placeholder="Search VN titles…　例：Clannad、月姫、ひぐらし" autocomplete="off" spellcheck="false">
+        <div class="vn-spinner" id="vn-spinner" style="display:none">◌</div>
+      </div>
+      <div id="vn-results" class="vn-results" style="display:none"></div>
+      <div id="vn-selected" class="vn-selected" style="display:none"></div>
+      <div class="vn-hint">
+        Searches <span style="color:var(--accent2)">VNDB</span> for titles &nbsp;·&nbsp; Character count &amp; stats from <span style="color:var(--accent2)">jiten.moe</span><br>
+        Selecting a VN will auto-fill the character count below ↓
       </div>
     </div>
 
@@ -636,8 +675,202 @@ document.addEventListener('DOMContentLoaded', ()=>{
     });
   });
 
+  // VN search
+  initVNSearch();
 
 });
+
+// ─────────────────────────────────────────────────────────────
+//  VN LIBRARY SEARCH
+// ─────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function useVNCharCount(count) {
+  const el = document.getElementById('custom-chars');
+  el.value = count;
+  S.chars = count;
+  updateResults();
+  el.scrollIntoView({ behavior:'smooth', block:'center' });
+  el.style.transition = 'border-color .3s, box-shadow .3s';
+  el.style.borderColor = 'var(--accent)';
+  el.style.boxShadow   = '0 0 9px var(--glow2)';
+  setTimeout(()=>{ el.style.borderColor=''; el.style.boxShadow=''; }, 1600);
+}
+
+function initVNSearch() {
+  let debounceTimer = null;
+  let currentQuery  = '';
+
+  const input    = document.getElementById('vn-search-input');
+  const spinner  = document.getElementById('vn-spinner');
+  const resultsEl= document.getElementById('vn-results');
+  const selectedEl= document.getElementById('vn-selected');
+
+  input.addEventListener('input', ()=>{
+    const q = input.value.trim();
+    currentQuery = q;
+    clearTimeout(debounceTimer);
+    if (q.length < 2) { hideResults(); return; }
+    debounceTimer = setTimeout(()=> doSearch(q), 420);
+  });
+
+  input.addEventListener('blur', ()=>{
+    setTimeout(()=>{ resultsEl.style.display='none'; }, 200);
+  });
+  input.addEventListener('focus', ()=>{
+    if (resultsEl.children.length) resultsEl.style.display='';
+  });
+
+  function hideResults() {
+    resultsEl.style.display='none';
+    resultsEl.innerHTML='';
+  }
+
+  async function doSearch(q) {
+    if (q !== currentQuery) return;
+    spinner.style.display = '';
+    resultsEl.style.display = 'none';
+    try {
+      const resp = await fetch('https://api.vndb.org/kana/vn', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          filters: ['search','=',q],
+          fields: 'id, title, alttitle, released',
+          sort: 'searchrank',
+          results: 8
+        })
+      });
+      if (!resp.ok) throw new Error();
+      const data = await resp.json();
+      if (q !== currentQuery) return;
+      renderResults(data.results || []);
+    } catch {
+      if (q !== currentQuery) return;
+      resultsEl.innerHTML = '<div style="padding:11px 14px;font-size:11px;color:var(--muted)">Could not reach VNDB — check your connection</div>';
+      resultsEl.style.display = '';
+    } finally {
+      spinner.style.display = 'none';
+    }
+  }
+
+  function renderResults(vns) {
+    if (!vns.length) {
+      resultsEl.innerHTML = '<div style="padding:11px 14px;font-size:11px;color:var(--muted)">No results found</div>';
+      resultsEl.style.display = '';
+      return;
+    }
+    resultsEl.innerHTML = vns.map(vn=>{
+      const rel = vn.released ? vn.released.slice(0,4) : '—';
+      const alt = vn.alttitle ? `<div class="vn-res-alt">${escHtml(vn.alttitle)}</div>` : '';
+      return `<div class="vn-result-item"
+        data-id="${escHtml(vn.id)}"
+        data-title="${escHtml(vn.title)}"
+        data-alt="${escHtml(vn.alttitle||'')}">
+        <div class="vn-res-title">${escHtml(vn.title)}</div>
+        ${alt}
+        <div class="vn-res-meta">${escHtml(vn.id)} · ${rel}</div>
+      </div>`;
+    }).join('');
+    resultsEl.querySelectorAll('.vn-result-item').forEach(el=>{
+      el.addEventListener('mousedown', e=>{
+        e.preventDefault();
+        selectVN(el.dataset.id, el.dataset.title, el.dataset.alt);
+      });
+    });
+    resultsEl.style.display = '';
+  }
+
+  async function selectVN(vnId, title, altTitle) {
+    input.value = title;
+    hideResults();
+    selectedEl.style.display = '';
+    selectedEl.innerHTML = `
+      <div class="vn-sel-title">${escHtml(title)}</div>
+      ${altTitle ? `<div class="vn-sel-alt">${escHtml(altTitle)}</div>` : ''}
+      <div class="vn-msg" style="padding:4px 0">Fetching stats from jiten.moe…</div>
+    `;
+
+    const jiten = await fetchJitenData(vnId);
+    renderSelected(vnId, title, altTitle, jiten);
+  }
+
+  async function jitenFetch(url) {
+    // jiten.moe has no CORS headers; route through a proxy when fetching from file://
+    const proxy = 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url);
+    try {
+      const r = await fetch(proxy);
+      if (r.ok) return r;
+    } catch {}
+    // fallback: try direct (works if served from a real domain)
+    return fetch(url);
+  }
+
+  async function fetchJitenData(vnId) {
+    try {
+      const r1 = await jitenFetch(`https://api.jiten.moe/api/media-deck/by-link-id/2/${vnId}`);
+      if (!r1 || !r1.ok) return null;
+      const d1 = await r1.json();
+      // API returns a plain array of integer deck IDs, e.g. [118931]
+      const deckIds = Array.isArray(d1) ? d1 : [];
+      if (!deckIds.length) return null;
+
+      let best = null;
+      for (const deckId of deckIds.slice(0, 4)) {
+        const r2 = await jitenFetch(`https://api.jiten.moe/api/media-deck/${deckId}/detail`);
+        if (!r2 || !r2.ok) continue;
+        const d2 = await r2.json();
+        // Real data lives at d2.data.mainDeck
+        const mainDeck = d2?.data?.mainDeck;
+        if (!mainDeck || typeof mainDeck !== 'object') continue;
+        if (!best || (mainDeck.characterCount ?? 0) > (best.characterCount ?? 0)) best = mainDeck;
+      }
+      return best;
+    } catch { return null; }
+  }
+
+  function renderSelected(vnId, title, altTitle, jiten) {
+    const cc    = jiten?.characterCount  ?? 0;
+    const diff  = jiten?.difficultyRaw   ?? 0;
+    const words = jiten?.uniqueWordCount ?? 0;
+    const kanji = jiten?.uniqueKanjiCount?? 0;
+    const hasData = jiten && (cc || diff || words || kanji);
+
+    selectedEl.innerHTML = `
+      <div class="vn-sel-title">${escHtml(title)}</div>
+      ${altTitle ? `<div class="vn-sel-alt">${escHtml(altTitle)}</div>` : ''}
+      ${hasData ? `
+        <div class="vn-sel-stats">
+          <div class="vn-sel-stat">
+            <div class="vn-sel-val">${cc ? fmtChars(cc) : '—'}</div>
+            <div class="vn-sel-lbl">Characters</div>
+          </div>
+          <div class="vn-sel-stat">
+            <div class="vn-sel-val">${diff ? diff.toFixed(1) : '—'}</div>
+            <div class="vn-sel-lbl">Difficulty</div>
+          </div>
+          <div class="vn-sel-stat">
+            <div class="vn-sel-val">${words ? (words >= 1000 ? Math.round(words/1000)+'K' : words) : '—'}</div>
+            <div class="vn-sel-lbl">Unique Words</div>
+          </div>
+          <div class="vn-sel-stat">
+            <div class="vn-sel-val">${kanji || '—'}</div>
+            <div class="vn-sel-lbl">Unique Kanji</div>
+          </div>
+        </div>
+        ${cc ? `<button class="btn btn-ghost" style="font-size:11px;padding:7px 15px" onclick="useVNCharCount(${cc})">↳ Use this character count</button>` : ''}
+      ` : `
+        <div class="vn-msg">No jiten.moe data found for <em>${escHtml(vnId)}</em> — try a different entry or enter the count manually</div>
+      `}
+      <div style="font-size:9px;color:var(--muted);margin-top:10px">
+        <a href="https://vndb.org/${escHtml(vnId)}" target="_blank" rel="noopener" style="color:var(--accent2);text-decoration:none">${escHtml(vnId)} on VNDB ↗</a>
+        ${hasData ? ' &nbsp;·&nbsp; Stats via jiten.moe' : ''}
+      </div>
+    `;
+  }
+}
 </script>
 </body>
 </html>

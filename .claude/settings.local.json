@@ -6,7 +6,18 @@
       "PowerShell(gh auth status 2>&1)",
       "PowerShell(winget install --id GitHub.cli --silent --accept-package-agreements --accept-source-agreements 2>&1)",
       "PowerShell($env:PATH = $env:PATH + \";C:\\\\Program Files\\\\GitHub CLI\"; gh --version 2>&1)",
-      "PowerShell($env:PATH = $env:PATH + \";C:\\\\Program Files\\\\GitHub CLI\"; gh auth status 2>&1)"
+      "PowerShell($env:PATH = $env:PATH + \";C:\\\\Program Files\\\\GitHub CLI\"; gh auth status 2>&1)",
+      "WebFetch(domain:jiten.moe)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:greasyfork.org)",
+      "WebFetch(domain:api.jiten.moe)",
+      "WebFetch(domain:api.vndb.org)",
+      "Bash(curl -s \"https://api.jiten.moe/api/media-deck/by-link-id/2/v17\" -H \"Accept: application/json\")",
+      "Bash(curl -s \"https://api.jiten.moe/api/media-deck/by-link-id/2/v4\" -H \"Accept: application/json\")",
+      "Bash(curl -s \"https://api.jiten.moe/api/media-deck/118931/detail\" -H \"Accept: application/json\")",
+      "Bash(curl -s \"https://api.jiten.moe/api/media-deck/186/detail\" -H \"Accept: application/json\")",
+      "Bash(curl -sI \"https://api.jiten.moe/api/media-deck/by-link-id/2/v4\")"
     ]
   }
 }
